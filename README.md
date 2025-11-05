@@ -94,14 +94,6 @@ Una aplicación completa de comercio electrónico construida con Next.js, TypeSc
 npm install
 ```
 
-2. **Inicializar la base de datos**
-
-La base de datos ya está configurada con el esquema necesario. Para poblarla con datos iniciales, ejecuta:
-
-```bash
-curl -X POST http://localhost:3000/api/seed
-```
-
 O visita `http://localhost:3000/api/seed` en tu navegador después de iniciar el servidor.
 
 3. **Iniciar el servidor de desarrollo**
