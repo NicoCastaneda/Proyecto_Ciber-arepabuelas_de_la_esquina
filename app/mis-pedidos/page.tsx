@@ -78,8 +78,8 @@ export default function OrdersPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {order.order_items?.map((item: any) => (
-                      <div key={item.id} className="flex justify-between items-center border-b border-amber-100 pb-2">
+                    {order.order_items?.map((item: any, index: number) => (
+                      <div key={item.id || `${order.id}-${index}`} className="flex justify-between items-center border-b border-amber-100 pb-2">
                         <div>
                           <p className="font-medium text-amber-900">{item.products?.name}</p>
                           <p className="text-sm text-amber-600">

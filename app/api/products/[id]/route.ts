@@ -10,8 +10,10 @@ const supabase = createClient(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  //{ params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
   try {
     const auth = await verifyAuth(request);
     if (!auth.authorized) {
@@ -24,7 +26,7 @@ export async function GET(
     const { data: product, error } = await supabase
       .from('products')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .maybeSingle();
 
     if (error || !product) {

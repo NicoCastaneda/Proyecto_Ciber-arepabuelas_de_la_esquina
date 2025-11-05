@@ -10,15 +10,14 @@ const supabase = createClient(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
+
   try {
     const auth = await verifyAuth(request);
     if (!auth.authorized) {
-      return NextResponse.json(
-        { error: 'No autorizado' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
     const { data: comments, error } = await supabase
@@ -33,30 +32,25 @@ export async function GET(
           photo_url
         )
       `)
-      .eq('product_id', params.id)
+      .eq('product_id', id)
       .order('created_at', { ascending: false });
 
     if (error) {
-      return NextResponse.json(
-        { error: 'Error al obtener comentarios' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Error al obtener comentarios' }, { status: 500 });
     }
 
     return NextResponse.json({ comments });
-
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Error en el servidor' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Error en el servidor' }, { status: 500 });
   }
 }
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params; // ✅ Esperar la promesa
+
   try {
     const user = await requireAuth(request);
     const body = await request.json();
@@ -88,7 +82,7 @@ export async function POST(
     const { data: comment, error } = await supabase
       .from('product_comments')
       .insert({
-        product_id: params.id,
+        product_id: id, // ✅ usa la variable id
         user_id: user.id,
         comment_text: sanitizedComment,
         rating: parseInt(rating)
@@ -104,11 +98,7 @@ export async function POST(
     }
 
     return NextResponse.json({ comment }, { status: 201 });
-
   } catch (error) {
-    return NextResponse.json(
-      { error: 'No autorizado' },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
   }
 }
