@@ -1,14 +1,25 @@
 'use client';
 
 import { useAuth } from '@/lib/auth-context';
+import { useEffect, useState } from 'react';
 import { Navigation } from '@/components/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { User, Mail, Calendar, Award } from 'lucide-react';
+import { User, Mail, Calendar, Award, Gift } from 'lucide-react';
 
 export default function ProfilePage() {
   const { user } = useAuth();
+  const [coupon, setCoupon] = useState<any>(null);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetch(`/api/coupons/${user.id}`)
+        .then(res => res.json())
+        .then(data => setCoupon(data.coupon))
+        .catch(() => setCoupon(null));
+    }
+  }, [user]);
 
   if (!user) return null;
 
@@ -36,6 +47,7 @@ export default function ProfilePage() {
                 <Badge className="bg-green-600">Activo</Badge>
               </div>
             </CardHeader>
+
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-lg">
                 <Mail className="h-5 w-5 text-amber-700" />
@@ -66,6 +78,24 @@ export default function ProfilePage() {
                   <p className="font-medium text-amber-900 capitalize">{user.status}</p>
                 </div>
               </div>
+
+              {coupon && (
+                <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg">
+                  <Gift className="h-5 w-5 text-green-700" />
+                  <div className="flex flex-col">
+                    <p className="text-sm text-green-600">Tu Cupón de Bienvenida</p>
+                    <p className="font-bold text-green-900 text-lg">
+                      {coupon.code}
+                    </p>
+                    <p className="text-sm text-green-700">
+                      {coupon.discount_percentage}% de descuento — {coupon.status}
+                    </p>
+                    <p className="text-xs text-green-600">
+                      Expira el {new Date(coupon.expires_at).toLocaleDateString('es-ES')}
+                    </p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
