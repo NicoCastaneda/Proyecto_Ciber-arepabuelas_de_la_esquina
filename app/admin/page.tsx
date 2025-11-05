@@ -96,6 +96,16 @@ export default function AdminPage() {
           <h1 className="text-4xl font-bold text-amber-900">Panel de Administración</h1>
         </div>
 
+        <div className="flex-justify-center mt-8">
+          <Button
+            onClick={() => router.push('/admin/productos')}
+            className="bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-lg shadow-md transition"
+          >
+            Ir a gestión de productos
+          </Button>
+        </div>
+
+
         <div className="space-y-8">
           {pendingUsers.length > 0 && (
             <Card>
