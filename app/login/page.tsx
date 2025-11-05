@@ -96,13 +96,13 @@ export default function LoginPage() {
                   </Link>
                 </div>
 
-                <div className="pt-4 border-t border-amber-200">
+                {/* <div className="pt-4 border-t border-amber-200">
                   <p className="text-sm text-amber-700 font-medium mb-2">Credenciales de prueba:</p>
                   <div className="text-xs text-amber-600 space-y-1 bg-amber-50 p-3 rounded">
                     <p><strong>Admin:</strong> admin@arepabuelas.com / admin123</p>
                     <p><strong>Cliente:</strong> cliente@arepabuelas.com / prueba123</p>
                   </div>
-                </div>
+                </div> */}
               </form>
             </CardContent>
           </Card>
