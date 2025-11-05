@@ -48,8 +48,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  //{ params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
   try {
     await requireAdmin(request);
     const body = await request.json();
@@ -66,7 +68,7 @@ export async function PUT(
     const { data: product, error } = await supabase
       .from('products')
       .update(updates)
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single();
 
@@ -89,15 +91,16 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
   try {
     await requireAdmin(request);
 
     const { error } = await supabase
       .from('products')
       .delete()
-      .eq('id', params.id);
+      .eq('id', id);
 
     if (error) {
       return NextResponse.json(
