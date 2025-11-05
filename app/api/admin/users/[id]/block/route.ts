@@ -9,15 +9,18 @@ const supabase = createClient(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  //{ params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+
+  const { id } = await context.params;
   try {
     const admin = await requireAdmin(request);
 
     const { error } = await supabase
       .from('users')
       .update({ status: 'blocked' })
-      .eq('id', params.id);
+      .eq('id', id);
 
     if (error) {
       return NextResponse.json(
@@ -28,7 +31,7 @@ export async function POST(
 
     await supabase.from('security_logs').insert({
       event_type: 'user_blocked',
-      user_id: params.id,
+      user_id: id,
       details: { blocked_by: admin.id }
     });
 

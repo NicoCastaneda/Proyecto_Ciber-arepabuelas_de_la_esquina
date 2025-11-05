@@ -9,8 +9,10 @@ const supabase = createClient(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params; // ✅ esperar la promesa antes de usar
+
   try {
     const admin = await requireAdmin(request);
 
@@ -21,7 +23,7 @@ export async function POST(
         approved_at: new Date().toISOString(),
         approved_by: admin.id
       })
-      .eq('id', params.id);
+      .eq('id', id);
 
     if (error) {
       return NextResponse.json(
@@ -32,7 +34,7 @@ export async function POST(
 
     await supabase.from('security_logs').insert({
       event_type: 'user_approved',
-      user_id: params.id,
+      user_id: id,
       details: { approved_by: admin.id }
     });
 
