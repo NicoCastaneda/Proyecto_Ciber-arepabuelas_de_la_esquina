@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth-context';
 import { Navigation } from '@/components/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,12 +16,21 @@ export default function RegisterPage() {
     fullName: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    photo: null as File | null,
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
   const router = useRouter();
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (file && !file.type.startsWith('image/')) {
+      toast.error('El archivo debe ser una imagen válida');
+      return;
+    }
+    setFormData({ ...formData, photo: file });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,10 +41,18 @@ export default function RegisterPage() {
       return;
     }
 
-    setLoading(true);
+    const form = new FormData();
+    form.append('fullName', formData.fullName);
+    form.append('email', formData.email);
+    form.append('password', formData.password);
+    if (formData.photo) form.append('photo', formData.photo);
 
+    setLoading(true);
     try {
-      await register(formData.email, formData.password, formData.fullName);
+      const res = await fetch('/api/auth/register', { method: 'POST', body: form });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || 'Error al registrar');
       toast.success('¡Registro exitoso! Tu cuenta está pendiente de aprobación.');
       router.push('/login');
     } catch (err: any) {
@@ -49,7 +65,6 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50">
       <Navigation />
-
       <main className="container mx-auto px-4 py-16">
         <div className="max-w-md mx-auto">
           <Card className="border-amber-200 shadow-xl">
@@ -58,7 +73,7 @@ export default function RegisterPage() {
               <CardDescription>Regístrate para disfrutar de nuestros productos</CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4" encType="multipart/form-data">
                 {error && (
                   <Alert variant="destructive">
                     <AlertDescription>{error}</AlertDescription>
@@ -67,64 +82,38 @@ export default function RegisterPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="fullName">Nombre Completo</Label>
-                  <Input
-                    id="fullName"
-                    type="text"
-                    value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    placeholder="Juan Pérez"
-                    required
-                    className="border-amber-200 focus:border-amber-500"
-                  />
+                  <Input id="fullName" required value={formData.fullName}
+                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="email">Correo Electrónico</Label>
-                  <Input
-                    id="email"
-                    type="email"
+                  <Input id="email" type="email" required
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="tu@email.com"
-                    required
-                    className="border-amber-200 focus:border-amber-500"
-                  />
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="password">Contraseña</Label>
-                  <Input
-                    id="password"
-                    type="password"
+                  <Input id="password" type="password" required
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="••••••••"
-                    required
-                    className="border-amber-200 focus:border-amber-500"
-                  />
-                  <p className="text-xs text-amber-600">
-                    Mínimo 8 caracteres, incluir mayúsculas, minúsculas y números
-                  </p>
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
+                  <Input id="confirmPassword" type="password" required
                     value={formData.confirmPassword}
-                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    placeholder="••••••••"
-                    required
-                    className="border-amber-200 focus:border-amber-500"
-                  />
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })} />
                 </div>
 
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-amber-600 hover:bg-amber-700 text-white"
-                >
+                <div className="space-y-2">
+                  <Label htmlFor="photo">Foto de Perfil</Label>
+                  <Input id="photo" type="file" accept="image/*" onChange={handleFileChange} />
+                  <p className="text-xs text-amber-600">Solo se aceptan imágenes JPG o PNG.</p>
+                </div>
+
+                <Button type="submit" disabled={loading} className="w-full bg-amber-600 hover:bg-amber-700 text-white">
                   {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
                 </Button>
 
@@ -133,15 +122,6 @@ export default function RegisterPage() {
                   <Link href="/login" className="font-semibold text-amber-800 hover:text-amber-900 underline">
                     Inicia sesión aquí
                   </Link>
-                </div>
-
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
-                  <p className="font-semibold mb-2">Beneficios al registrarte:</p>
-                  <ul className="list-disc list-inside space-y-1">
-                    <li>Cupón de 15% en tu primera compra</li>
-                    <li>Historial de pedidos</li>
-                    <li>Proceso de compra más rápido</li>
-                  </ul>
                 </div>
               </form>
             </CardContent>
