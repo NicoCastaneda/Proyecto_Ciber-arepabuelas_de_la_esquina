@@ -8,6 +8,11 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+function isValidPexelsUrl(url: string): boolean {
+  const regex = /^https:\/\/images\.pexels\.com\/photos\/\d+\/pexels-photo-\d+\.jpeg/;
+  return regex.test(url);
+}
+
 export async function GET(
   request: NextRequest,
   //{ params }: { params: { id: string } }
@@ -55,14 +60,23 @@ export async function PUT(
   try {
     await requireAdmin(request);
     const body = await request.json();
-    const { name, description, price, imageUrl, stock } = body;
+    const { name, description, price, image_url, stock } = body;
 
     const updates: any = { updated_at: new Date().toISOString() };
 
     if (name) updates.name = sanitizeInput(name);
     if (description) updates.description = sanitizeInput(description);
     if (price) updates.price = parseFloat(price);
-    if (imageUrl) updates.image_url = imageUrl;
+    if (image_url) {
+      if (!isValidPexelsUrl(image_url)) {
+        return NextResponse.json(
+          { error: 'La URL de la imagen debe ser de Pexels (https://images.pexels.com/...)' },
+          { status: 400 }
+        );
+      }
+      updates.image_url = image_url;
+    }
+
     if (stock !== undefined) updates.stock = parseInt(stock);
 
     const { data: product, error } = await supabase

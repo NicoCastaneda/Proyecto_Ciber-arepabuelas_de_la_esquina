@@ -8,14 +8,16 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// ✅ Validar URLs válidas de Pexels
+function isValidPexelsUrl(url: string) {
+  return /^https:\/\/images\.pexels\.com\/photos\/\d+\/pexels-photo-\d+\.jpeg/.test(url);
+}
+
 export async function GET(request: NextRequest) {
   try {
     const auth = await verifyAuth(request);
     if (!auth.authorized) {
-      return NextResponse.json(
-        { error: 'No autorizado' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
     const { data: products, error } = await supabase
@@ -24,19 +26,12 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (error) {
-      return NextResponse.json(
-        { error: 'Error al obtener productos' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Error al obtener productos' }, { status: 500 });
     }
 
     return NextResponse.json({ products });
-
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Error en el servidor' },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ error: 'Error en el servidor' }, { status: 500 });
   }
 }
 
@@ -44,17 +39,27 @@ export async function POST(request: NextRequest) {
   try {
     const admin = await requireAdmin(request);
     const body = await request.json();
-    const { name, description, price, imageUrl, stock } = body;
+    console.log('BODY RECIBIDO:', body);
 
-    if (!name || !description || !price || !imageUrl) {
+    const { name, description, price, image_url, imageUrl, stock } = body;
+    const finalImageUrl = image_url || imageUrl;
+
+    // ✅ Validación básica
+    if (!name?.trim() || !description?.trim() || !price || !finalImageUrl?.trim()) {
+      console.log({ name, description, price, finalImageUrl, stock });
       return NextResponse.json(
         { error: 'Todos los campos son requeridos' },
         { status: 400 }
       );
     }
 
-    const sanitizedName = sanitizeInput(name);
-    const sanitizedDescription = sanitizeInput(description);
+    // ✅ Validación de formato de URL
+    if (!isValidPexelsUrl(finalImageUrl)) {
+      return NextResponse.json(
+        { error: 'La URL de la imagen debe ser de Pexels (https://images.pexels.com/...)' },
+        { status: 400 }
+      );
+    }
 
     if (parseFloat(price) <= 0) {
       return NextResponse.json(
@@ -63,32 +68,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const sanitizedName = sanitizeInput(name);
+    const sanitizedDescription = sanitizeInput(description);
+
     const { data: product, error } = await supabase
       .from('products')
       .insert({
         name: sanitizedName,
         description: sanitizedDescription,
         price: parseFloat(price),
-        image_url: imageUrl,
+        image_url: finalImageUrl, // 👈 CORREGIDO
         stock: parseInt(stock) || 0,
-        created_by: admin.id
+        created_by: admin.id,
       })
       .select()
       .single();
 
     if (error) {
-      return NextResponse.json(
-        { error: 'Error al crear producto' },
-        { status: 500 }
-      );
+      console.error('SUPABASE ERROR:', error);
+      return NextResponse.json({ error: 'Error al crear producto' }, { status: 500 });
     }
 
     return NextResponse.json({ product }, { status: 201 });
-
   } catch (error) {
-    return NextResponse.json(
-      { error: 'No autorizado' },
-      { status: 403 }
-    );
+    console.error('POST ERROR:', error);
+    return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
   }
 }
